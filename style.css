@@ -734,3 +734,44 @@ button:active {
 .hidden {
     display: none !important;
 }
+
+/* ============================================================
+   BUTTON CLICK FIX
+   ============================================================ */
+
+button,
+.btn,
+.menu-button,
+.screen button,
+.overlay button {
+    position: relative !important;
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+#menu,
+#settings,
+#armory,
+#pause,
+#death,
+#intermission,
+#upgrade,
+#shop {
+    pointer-events: auto !important;
+}
+
+#gameCanvas {
+    z-index: 1 !important;
+}
+
+#menu,
+#settings,
+#armory,
+#pause,
+#death,
+#intermission,
+#upgrade,
+#shop {
+    z-index: 1000 !important;
+}
