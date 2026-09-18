@@ -1,6 +1,4 @@
-// ============================================================
-// DEADWAVE - SETTINGS.JS
-// ============================================================
+"use strict";
 
 window.settings = {
     crosshair: true,
@@ -11,126 +9,44 @@ window.settings = {
     autoReload: true
 };
 
-// ------------------------------------------------------------
-// APPLY SETTINGS
-// ------------------------------------------------------------
-
-function applySettings() {
-    const crosshair = document.getElementById("crosshair");
-
-    if (crosshair) {
-        crosshair.style.display = window.settings.crosshair ? "block" : "none";
-    }
-
-    // Save settings
+function saveSettings() {
     try {
         localStorage.setItem(
             "deadwaveSettings",
             JSON.stringify(window.settings)
         );
     } catch (error) {
-        console.warn("Could not save settings.");
+        console.warn("Settings could not be saved.");
     }
-
-    // Update checkbox states
-    const checkboxMap = {
-        setCrosshair: "crosshair",
-        setBars: "healthBars",
-        setNumbers: "damageNumbers",
-        setShake: "screenShake",
-        setParticles: "particles",
-        setAutoReload: "autoReload"
-    };
-
-    Object.keys(checkboxMap).forEach(elementId => {
-        const checkbox = document.getElementById(elementId);
-        const settingName = checkboxMap[elementId];
-
-        if (checkbox) {
-            checkbox.checked = window.settings[settingName];
-        }
-    });
 }
-
-// ------------------------------------------------------------
-// LOAD SAVED SETTINGS
-// ------------------------------------------------------------
 
 function loadSettings() {
     try {
         const saved = localStorage.getItem("deadwaveSettings");
 
-        if (!saved) {
-            return;
+        if (saved) {
+            const data = JSON.parse(saved);
+
+            Object.keys(window.settings).forEach(key => {
+                if (typeof data[key] === "boolean") {
+                    window.settings[key] = data[key];
+                }
+            });
         }
-
-        const parsed = JSON.parse(saved);
-
-        if (typeof parsed.crosshair === "boolean") {
-            window.settings.crosshair = parsed.crosshair;
-        }
-
-        if (typeof parsed.healthBars === "boolean") {
-            window.settings.healthBars = parsed.healthBars;
-        }
-
-        if (typeof parsed.damageNumbers === "boolean") {
-            window.settings.damageNumbers = parsed.damageNumbers;
-        }
-
-        if (typeof parsed.screenShake === "boolean") {
-            window.settings.screenShake = parsed.screenShake;
-        }
-
-        if (typeof parsed.particles === "boolean") {
-            window.settings.particles = parsed.particles;
-        }
-
-        if (typeof parsed.autoReload === "boolean") {
-            window.settings.autoReload = parsed.autoReload;
-        }
-
     } catch (error) {
-        console.warn("Could not load saved settings.");
+        console.warn("Settings could not be loaded.");
     }
 }
 
-// ------------------------------------------------------------
-// OPEN SETTINGS
-// ------------------------------------------------------------
+function applySettings() {
+    const crosshair = document.getElementById("crosshair");
 
-function openSettings() {
-    const settingsScreen = document.getElementById("settings");
-
-    if (!settingsScreen) {
-        return;
+    if (crosshair) {
+        crosshair.style.display =
+            window.settings.crosshair ? "block" : "none";
     }
 
-    settingsScreen.classList.remove("hidden");
-
-    applySettings();
-}
-
-// ------------------------------------------------------------
-// CLOSE SETTINGS
-// ------------------------------------------------------------
-
-function closeSettings() {
-    const settingsScreen = document.getElementById("settings");
-
-    if (!settingsScreen) {
-        return;
-    }
-
-    settingsScreen.classList.add("hidden");
-}
-
-// ------------------------------------------------------------
-// SETUP CHECKBOXES
-// ------------------------------------------------------------
-
-function setupSettings() {
-    const checkboxMap = {
+    const settingsMap = {
         setCrosshair: "crosshair",
         setBars: "healthBars",
         setNumbers: "damageNumbers",
@@ -139,40 +55,72 @@ function setupSettings() {
         setAutoReload: "autoReload"
     };
 
-    Object.entries(checkboxMap).forEach(([elementId, settingName]) => {
-        const checkbox = document.getElementById(elementId);
+    Object.entries(settingsMap).forEach(([id, setting]) => {
+        const checkbox = document.getElementById(id);
 
-        if (!checkbox) {
-            return;
+        if (checkbox) {
+            checkbox.checked = window.settings[setting];
         }
-
-        checkbox.addEventListener("change", () => {
-            window.settings[settingName] = checkbox.checked;
-
-            applySettings();
-        });
     });
 
-    const closeButton1 = document.getElementById("closeSettings");
-    const closeButton2 = document.getElementById("closeSettings2");
+    saveSettings();
+}
 
-    if (closeButton1) {
-        closeButton1.addEventListener("click", closeSettings);
-    }
+function openSettings() {
+    const settings = document.getElementById("settings");
 
-    if (closeButton2) {
-        closeButton2.addEventListener("click", closeSettings);
-    }
+    if (!settings) return;
+
+    settings.classList.remove("hidden");
+    settings.style.display = "flex";
+    settings.style.pointerEvents = "auto";
 
     applySettings();
 }
 
-// ------------------------------------------------------------
-// INITIALIZE
-// ------------------------------------------------------------
+function closeSettings() {
+    const settings = document.getElementById("settings");
+
+    if (!settings) return;
+
+    settings.classList.add("hidden");
+}
+
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadSettings();
-    setupSettings();
     applySettings();
+
+    const settingsMap = {
+        setCrosshair: "crosshair",
+        setBars: "healthBars",
+        setNumbers: "damageNumbers",
+        setShake: "screenShake",
+        setParticles: "particles",
+        setAutoReload: "autoReload"
+    };
+
+    Object.entries(settingsMap).forEach(([id, setting]) => {
+        const checkbox = document.getElementById(id);
+
+        if (checkbox) {
+            checkbox.addEventListener("change", () => {
+                window.settings[setting] = checkbox.checked;
+                applySettings();
+            });
+        }
+    });
+
+    const close1 = document.getElementById("closeSettings");
+    const close2 = document.getElementById("closeSettings2");
+
+    if (close1) {
+        close1.addEventListener("click", closeSettings);
+    }
+
+    if (close2) {
+        close2.addEventListener("click", closeSettings);
+    }
 });
