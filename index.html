@@ -1,326 +1,432 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Deadwave: Outbreak</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#090b10;color:#eaf0f5;font-family:Inter,system-ui,Arial,sans-serif}
-body{user-select:none}.hidden{display:none!important}
-button{font:inherit;color:inherit;border:1px solid #3a4350;background:#171c24;border-radius:9px;padding:10px 16px;cursor:pointer;transition:.15s}
-button:hover{background:#242c37;border-color:#697789;transform:translateY(-1px)}
-#game{position:fixed;inset:0;background:#0c1117}.screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.panel{background:rgba(12,16,22,.94);border:1px solid #303946;box-shadow:0 20px 80px #0008;border-radius:16px;padding:30px;min-width:320px;max-width:720px}
-.title{font-size:46px;font-weight:900;letter-spacing:3px}.sub{color:#8f9aaa;margin:5px 0 25px}
-.menuBtns{display:grid;gap:10px}.menuBtns button{font-size:18px;padding:13px}.accent{border-color:#6e91b8}
-#canvas{position:absolute;inset:0;width:100%;height:100%;cursor:none}
-#hud{position:absolute;inset:0;pointer-events:none}.hudBox{position:absolute;background:#0c1119cc;border:1px solid #303946;border-radius:10px;padding:9px 12px;backdrop-filter:blur(4px)}
-#topLeft{left:16px;top:16px;min-width:220px}#topCenter{left:50%;top:16px;transform:translateX(-50%);text-align:center}
-#topRight{right:16px;top:16px;text-align:right}#bottomLeft{left:16px;bottom:16px;width:240px}
-#gunHud{right:16px;bottom:16px;text-align:right;min-width:180px}.label{font-size:11px;color:#8c98a8;text-transform:uppercase;letter-spacing:1px}.big{font-size:22px;font-weight:800}
-.bar{height:9px;background:#252b34;border-radius:10px;overflow:hidden;margin-top:5px}.fill{height:100%;width:100%;transition:.15s}
-#hpFill{background:#d34d57}.staminaFill{background:#6da2d4}.xpFill{background:#a77ce2}
-#message{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);font-size:27px;font-weight:900;text-align:center;text-shadow:0 3px 20px #000;opacity:0;transition:.2s}
-#crosshair{position:absolute;width:26px;height:26px;pointer-events:none;transform:translate(-50%,-50%);z-index:10}
-#crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff;box-shadow:0 0 5px #000}
-#crosshair:before{width:2px;height:26px;left:12px;top:0}#crosshair:after{height:2px;width:26px;left:0;top:12px}
-#crossDot{position:absolute;width:4px;height:4px;border-radius:50%;background:#fff;left:11px;top:11px}
-.overlay{position:absolute;inset:0;background:#05070bcc;display:flex;align-items:center;justify-content:center;z-index:20}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.card{text-align:left;min-height:170px;padding:18px;background:#141a22;border:1px solid #36404d;border-radius:12px}
-.card h3{margin:5px 0 8px}.card p{color:#aab4c2;font-size:14px;line-height:1.4}.level{color:#8ab4dc;font-size:12px}
-.shopGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-height:60vh;overflow:auto;margin-top:15px}
-.item{padding:14px;background:#141a22;border:1px solid #343e4b;border-radius:11px}.item h3{margin:0 0 5px}.item p{margin:3px 0;color:#9aa6b5;font-size:13px}.price{float:right;color:#e4bd65}.item button{margin-top:9px;width:100%}
-.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button.active{border-color:#8ab4dc}
-.settingRow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #29313b}.toggle{min-width:75px}
-#damageNumbers{position:absolute;inset:0;pointer-events:none}.dmg{position:absolute;font-weight:900;color:#fff;animation:float .55s ease-out forwards;text-shadow:0 2px 4px #000}
-@keyframes float{to{transform:translateY(-35px);opacity:0}}
-.small{font-size:12px;color:#8894a4}.statline{display:flex;justify-content:space-between;gap:20px;margin:4px 0}
-@media(max-width:650px){.cards{grid-template-columns:1fr}.panel{max-width:94vw}.title{font-size:34px}.shopGrid{grid-template-columns:1fr}#topLeft{min-width:175px}.hudBox{padding:7px 9px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEADWAVE: OUTBREAK</title>
+
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<div id="game">
-<canvas id="canvas"></canvas><div id="crosshair"><span id="crossDot"></span></div><div id="damageNumbers"></div>
 
-<div id="hud" class="hidden">
-  <div id="topLeft" class="hudBox">
-    <div class="label">Health</div><div class="big" id="healthText">100 / 100</div><div class="bar"><div id="hpFill" class="fill"></div></div>
-    <div class="label" style="margin-top:8px">Sprint</div><div class="bar"><div id="staminaFill" class="fill staminaFill"></div></div>
-  </div>
-  <div id="topCenter" class="hudBox"><div class="big" id="waveText">WAVE 1</div><div class="small" id="zombieText">ZOMBIES LEFT: 0</div></div>
-  <div id="topRight" class="hudBox"><div class="big" id="moneyText">$0</div><div class="small" id="timeText">00:00</div></div>
-  <div id="bottomLeft" class="hudBox"><div class="label">Weapon details</div><div id="gunDetails" class="small"></div></div>
-  <div id="gunHud" class="hudBox"><div class="label" id="gunName">PISTOL</div><div class="big" id="ammoText">12 / ∞</div><div class="small" id="reloadText">READY • R TO RELOAD</div></div>
-  <div id="message"></div>
-</div>
+    <!-- =========================================================
+         MAIN MENU
+    ========================================================== -->
+    <div id="menu" class="screen">
+        <div class="panel title">
+            <div class="eyebrow">TOP-DOWN SURVIVAL</div>
 
-<div id="menu" class="screen">
-  <div class="panel">
-    <div class="title">DEADWAVE</div><div class="sub">OUTBREAK • TOP-DOWN SURVIVAL</div>
-    <div class="menuBtns">
-      <button class="accent" onclick="startGame()">PLAY</button>
-      <button onclick="showShop(true)">ARMORY</button>
-      <button onclick="showSettings(true)">SETTINGS</button>
+            <h1>DEADWAVE</h1>
+            <p>OUTBREAK</p>
+
+            <button id="playBtn" type="button">
+                PLAY
+            </button>
+
+            <button id="armoryBtn" type="button">
+                ARMORY
+            </button>
+
+            <button id="settingsBtn" type="button">
+                SETTINGS
+            </button>
+
+            <div class="controls">
+                WASD move · SHIFT sprint · Mouse aim/fire · R reload · ESC pause
+            </div>
+        </div>
     </div>
-    <p class="small" style="margin-top:22px">WASD move • SHIFT sprint • Mouse aim • Left click shoot • R reload • ESC pause</p>
-  </div>
-</div>
 
-<div id="upgradeOverlay" class="overlay hidden">
- <div class="panel"><div class="title" style="font-size:30px">UPGRADE</div><div class="sub" id="upgradeSub">Choose one upgrade.</div><div id="upgradeCards" class="cards"></div></div>
-</div>
 
-<div id="intermission" class="overlay hidden">
- <div class="panel"><div class="title" style="font-size:30px">INTERMISSION</div><div class="sub">Next wave in <b id="intermissionTime">20</b>s</div>
- <button class="accent" onclick="showShop(true)">ENTER SHOP</button>
- <div class="small" style="margin-top:14px">Buy weapons and upgrades with money earned from kills.</div></div>
-</div>
+    <!-- =========================================================
+         GAME
+    ========================================================== -->
+    <div id="game">
 
-<div id="shopOverlay" class="overlay hidden">
- <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="title" style="font-size:30px">ARMORY</div><div class="sub">Cash: <b id="shopMoney">$0</b></div></div><button onclick="closeShop()">CLOSE</button></div>
- <div class="tabs"><button id="weaponsTab" class="active" onclick="renderShop('weapons')">WEAPONS</button><button id="upgradesTab" onclick="renderShop('shopUpgrades')">UPGRADES</button></div>
- <div id="shopGrid" class="shopGrid"></div></div>
-</div>
+        <canvas id="gameCanvas"></canvas>
 
-<div id="settingsOverlay" class="overlay hidden">
- <div class="panel"><div class="title" style="font-size:30px">SETTINGS</div><div class="sub">Customize the HUD and effects.</div>
- <div class="settingRow"><span>Crosshair</span><button id="sCrosshair" class="toggle" onclick="toggleSetting('crosshair')">ON</button></div>
- <div class="settingRow"><span>Zombie health bars</span><button id="sBars" class="toggle" onclick="toggleSetting('bars')">ON</button></div>
- <div class="settingRow"><span>Damage numbers</span><button id="sDamage" class="toggle" onclick="toggleSetting('damage')">ON</button></div>
- <div class="settingRow"><span>Screen shake</span><button id="sShake" class="toggle" onclick="toggleSetting('shake')">ON</button></div>
- <div class="settingRow"><span>Auto reload</span><button id="sAuto" class="toggle" onclick="toggleSetting('autoReload')">ON</button></div>
- <div class="settingRow"><span>Particles</span><button id="sParticles" class="toggle" onclick="toggleSetting('particles')">ON</button></div>
- <button style="margin-top:18px;width:100%" onclick="showSettings(false)">BACK</button></div>
-</div>
+        <!-- Custom mouse crosshair -->
+        <div id="crosshair"></div>
 
-<div id="pauseOverlay" class="overlay hidden"><div class="panel"><div class="title" style="font-size:34px">PAUSED</div><div class="sub">Take a breather.</div><div class="menuBtns"><button onclick="togglePause()">RESUME</button><button onclick="location.reload()">MAIN MENU</button></div></div></div>
 
-<div id="deathOverlay" class="overlay hidden"><div class="panel"><div class="title" style="font-size:34px">YOU DIED</div><div class="sub" id="deathStats"></div><div class="menuBtns"><button class="accent" onclick="startGame()">TRY AGAIN</button><button onclick="location.reload()">MAIN MENU</button></div></div></div>
-</div>
+        <!-- =====================================================
+             HUD
+        ====================================================== -->
+        <div id="hud">
 
-<script>
-const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
-let W,H,dpr=1,last=0,running=false,paused=false,mouse={x:0,y:0,down:false},keys={},zombies=[],bullets=[],particles=[],wave=0,zombiesToSpawn=0,spawnTimer=0,intermission=false,intermissionTimer=0,gameTime=0;
-let player, currentGun='pistol', ownedGuns=['pistol'], money=0, kills=0, shots=0;
-const settings={crosshair:true,bars:true,damage:true,shake:true,autoReload:true,particles:true};
-const guns={
- pistol:{name:'Pistol',damage:28,rate:4,mag:12,reload:1.35,spread:.035,range:850,crit:.1,price:0,desc:'Balanced sidearm. Reliable at medium range.'},
- smg:{name:'SMG',damage:17,rate:11,mag:30,reload:1.65,spread:.075,range:700,crit:.07,price:500,desc:'Very fast fire rate, but weaker and less accurate.'},
- shotgun:{name:'Shotgun',damage:17,rate:1.2,mag:6,reload:2.15,spread:.23,pellets:8,range:440,crit:.08,price:750,desc:'Eight pellets per shot. Devastating up close.'},
- rifle:{name:'Rifle',damage:44,rate:5.2,mag:20,reload:1.8,spread:.018,range:1000,crit:.14,price:1000,desc:'Accurate and powerful with a medium fire rate.'},
- revolver:{name:'Revolver',damage:72,rate:2.1,mag:6,reload:2.3,spread:.028,range:900,crit:.22,price:1250,desc:'Huge damage and critical chance. Slow to fire and reload.'}
-};
-const zombieTypes={
- walker:{name:'Walker',hp:70,speed:48,damage:8,radius:17,reward:20,color:'#6c8460',desc:'Balanced basic zombie.'},
- runner:{name:'Runner',hp:38,speed:105,damage:7,radius:13,reward:25,color:'#9a7a62',desc:'Fast and fragile. Closes distance quickly.'},
- tank:{name:'Tank',hp:380,speed:25,damage:20,radius:29,reward:90,color:'#65707b',desc:'Huge health and damage, but very slow.'},
- spitter:{name:'Spitter',hp:95,speed:38,damage:10,radius:18,reward:55,color:'#80619b',desc:'Keeps distance and launches ranged acid.'},
- crawler:{name:'Crawler',hp:28,speed:125,damage:5,radius:10,reward:18,color:'#697b83',desc:'Tiny, fast and difficult to spot.'},
- armored:{name:'Armored',hp:170,speed:42,damage:12,radius:21,reward:65,color:'#53606c',desc:'Armor reduces body-shot damage. Head is vulnerable.'},
- exploder:{name:'Exploder',hp:110,speed:58,damage:35,radius:19,reward:70,color:'#a07945',desc:'Dangerous close-range zombie. Keep moving.'}
-};
-let upgrades={health:0,speed:0,reload:0,damage:0,accuracy:0,sprint:0,crit:0,mag:0};
-const upgradeDefs={
- health:{name:'Vitality',desc:'+20 maximum health.',apply:()=>{player.maxHp+=20;player.hp+=20}},
- speed:{name:'Fleet Feet',desc:'+8% movement speed.',apply:()=>{}},
- reload:{name:'Fast Hands',desc:'-12% reload time.',apply:()=>{}},
- damage:{name:'Stopping Power',desc:'+10% weapon damage.',apply:()=>{}},
- accuracy:{name:'Steady Aim',desc:'-15% weapon spread.',apply:()=>{}},
- sprint:{name:'Endurance',desc:'+15% sprint speed and stamina.',apply:()=>{}},
- crit:{name:'Critical Training',desc:'+5% critical-hit chance.',apply:()=>{}},
- mag:{name:'Extended Mag',desc:'+2 bullets per magazine.',apply:()=>{}}
-};
+            <div class="top">
 
-function resize(){dpr=devicePixelRatio||1;W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
-addEventListener('resize',resize);resize();
-addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;moveCrosshair()});
-addEventListener('mousedown',e=>{if(e.button===0)mouse.down=true});
-addEventListener('mouseup',e=>{if(e.button===0)mouse.down=false});
-addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='r')reload();if(e.key==='Escape'&&running&&!intermission&&!document.querySelector('#upgradeOverlay').classList.contains('hidden'))return;if(e.key==='Escape'&&running&&!intermission)togglePause()});
-addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-function moveCrosshair(){document.getElementById('crosshair').style.left=mouse.x+'px';document.getElementById('crosshair').style.top=mouse.y+'px'}
-moveCrosshair();
+                <span>
+                    WAVE
+                    <b id="wave">1</b>
+                </span>
 
-function startGame(){
- document.querySelectorAll('.screen,.overlay').forEach(x=>x.classList.add('hidden'));
- document.getElementById('hud').classList.remove('hidden');
- running=true;paused=false;wave=0;money=0;kills=0;shots=0;gameTime=0;ownedGuns=['pistol'];currentGun='pistol';
- upgrades={health:0,speed:0,reload:0,damage:0,accuracy:0,sprint:0,crit:0,mag:0};
- player={x:W/2,y:H/2,r:15,maxHp:100,hp:100,baseSpeed:190,stamina:100,maxStamina:100,ammo:guns.pistol.mag,reloading:false,reloadT:0,shotT:0,inv:0};
- zombies=[];bullets=[];particles=[];startWave(1);updateHUD();
-}
-function startWave(n){
- wave=n;intermission=false;zombiesToSpawn=Math.min(7+n*3,120);spawnTimer=.1;
- if(wave>1) showMessage('WAVE '+wave,.9);
-}
-function difficulty(){return 1+(wave-1)*.12}
-function chooseZombie(){
- const r=Math.random(), avail=['walker'];
- if(wave>=2)avail.push('runner');
- if(wave>=4)avail.push('crawler');
- if(wave>=5)avail.push('spitter');
- if(wave>=7)avail.push('armored');
- if(wave>=8)avail.push('exploder');
- if(wave>=10)avail.push('tank');
- return zombieTypes[avail[Math.floor(Math.random()*avail.length)]];
-}
-function spawnZombie(){
- const t=chooseZombie(), side=Math.floor(Math.random()*4), pad=35;
- let x,y;if(side===0){x=Math.random()*W;y=-pad}else if(side===1){x=W+pad;y=Math.random()*H}else if(side===2){x=Math.random()*W;y=H+pad}else{x=-pad;y=Math.random()*H}
- const scale=difficulty();
- zombies.push({type:t.name.toLowerCase(),x,y,r:t.radius,hp:t.hp*scale,maxHp:t.hp*scale,speed:t.speed*(1+(wave-1)*.008),damage:t.damage*scale,reward:t.reward,hitT:0,shootT:2+Math.random()*2,dead:false});
-}
-function playerStats(){
- const g=guns[currentGun], dmg=g.damage*(1+upgrades.damage*.1), speed=player.baseSpeed*(1+upgrades.speed*.08), reload=g.reload*Math.pow(.88,upgrades.reload), spread=g.spread*Math.pow(.85,upgrades.accuracy), crit=Math.min(.75,g.crit+upgrades.crit*.05), mag=g.mag+upgrades.mag*2;
- return {g,dmg,speed,reload,spread,crit,mag,sprintSpeed:speed*(1.65+upgrades.sprint*.15)};
-}
-function shoot(){
- if(player.reloading||player.shotT>0)return;
- const s=playerStats();if(player.ammo<=0){if(settings.autoReload)reload();return}
- player.ammo--;player.shotT=1/s.g.rate;shots++;
- const count=s.g.pellets||1;
- for(let i=0;i<count;i++){
-  let a=Math.atan2(mouse.y-player.y,mouse.x-player.x)+(Math.random()-.5)*s.spread;
-  const critical=Math.random()<s.crit, damage=s.dmg*(critical?2:1);
-  bullets.push({x:player.x,y:player.y,vx:Math.cos(a)*950,vy:Math.sin(a)*950,life:s.g.range/950,damage,critical});
- }
- burst(player.x+Math.cos(Math.atan2(mouse.y-player.y,mouse.x-player.x))*20,player.y+Math.sin(Math.atan2(mouse.y-player.y,mouse.x-player.x))*20,'#f5d27a',4);
- if(settings.shake) canvas.style.transform='translate('+(Math.random()*4-2)+'px,'+(Math.random()*4-2)+'px)';
- setTimeout(()=>canvas.style.transform='',45);
-}
-function reload(){
- if(!running||paused||intermission||player.reloading)return;
- const s=playerStats();if(player.ammo>=s.mag)return;
- player.reloading=true;player.reloadT=s.reload;
-}
-function damageZombie(z,amount,critical,hitX,hitY){
- let mult=1;if(z.type==='armored')mult=.5;
- const dealt=amount*mult;z.hp-=dealt;z.hitT=.08;
- if(settings.damage){const el=document.createElement('div');el.className='dmg';el.textContent=(critical?'CRIT ':'')+Math.round(dealt);el.style.left=hitX+'px';el.style.top=hitY+'px';document.getElementById('damageNumbers').appendChild(el);setTimeout(()=>el.remove(),550)}
- if(z.hp<=0)killZombie(z);
-}
-function killZombie(z){
- if(z.dead)return;z.dead=true;kills++;money+=z.reward;zombies=zombies.filter(a=>a!==z);
- burst(z.x,z.y,z.type==='exploder'?'#d99045':'#b7c3a7',settings.particles?10:3);
- if(z.type==='exploder')zombies.filter(a=>Math.hypot(a.x-z.x,a.y-z.y)<95).forEach(a=>damageZombie(a,55,false,a.x,a.y));
-}
-function burst(x,y,color,n){if(!settings.particles)return;for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*170,vy:(Math.random()-.5)*170,life:.35+Math.random()*.35,color})}
-function hurt(amount){
- if(player.inv>0)return;player.hp-=amount;player.inv=.35;
- if(player.hp<=0)die();
-}
-function die(){
- running=false;mouse.down=false;document.getElementById('hud').classList.add('hidden');document.getElementById('deathOverlay').classList.remove('hidden');
- document.getElementById('deathStats').textContent=`Reached wave ${wave} • ${kills} kills • $${money} earned`;
-}
-function update(dt){
- if(!running||paused)return;
- if(intermission){intermissionTimer-=dt;if(intermissionTimer<=0){document.getElementById('intermission').classList.add('hidden');startWave(wave+1)}else document.getElementById('intermissionTime').textContent=Math.ceil(intermissionTimer);updateHUD();return}
- gameTime+=dt;
- const s=playerStats();let dx=(keys.d?1:0)-(keys.a?1:0),dy=(keys.s?1:0)-(keys.w?1:0),len=Math.hypot(dx,dy)||1;
- let sprint=keys.shift&&player.stamina>0&&(dx||dy);let sp=sprint?s.sprintSpeed:s.speed;
- if(sprint)player.stamina=Math.max(0,player.stamina-dt*(22-upgrades.sprint*2));else player.stamina=Math.min(player.maxStamina,player.stamina+dt*(15+upgrades.sprint*2));
- player.x=Math.max(20,Math.min(W-20,player.x+dx/len*sp*dt));player.y=Math.max(20,Math.min(H-20,player.y+dy/len*sp*dt));
- player.shotT=Math.max(0,player.shotT-dt);player.inv=Math.max(0,player.inv-dt);
- if(player.reloading){player.reloadT-=dt;if(player.reloadT<=0){player.reloading=false;player.ammo=s.mag}}
- if(mouse.down)shoot();
- spawnTimer-=dt;if(zombiesToSpawn>0&&spawnTimer<=0){spawnZombie();zombiesToSpawn--;spawnTimer=Math.max(.18,.8-wave*.012)}
- bullets.forEach(b=>{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt});
- for(const b of bullets){
-  for(const z of zombies){if(Math.hypot(b.x-z.x,b.y-z.y)<z.r){damageZombie(z,b.damage,b.critical,b.x,b.y);b.life=-1;break}}
- }
- bullets=bullets.filter(b=>b.life>0&&b.x>-30&&b.x<W+30&&b.y>-30&&b.y<H+30);
- for(const z of zombies){
-  const d=Math.hypot(player.x-z.x,player.y-z.y), ux=(player.x-z.x)/(d||1),uy=(player.y-z.y)/(d||1);
-  if(z.type==='spitter'&&d<500){z.shootT-=dt;if(z.shootT<=0){z.shootT=2.4;bullets.push({enemy:true,x:z.x,y:z.y,vx:ux*260,vy:uy*260,life:3,damage:z.damage})}}
-  if(!(z.type==='spitter'&&d<230)){z.x+=ux*z.speed*dt;z.y+=uy*z.speed*dt}
-  if(d<player.r+z.r){hurt(z.damage*dt);z.x-=ux*18*dt;z.y-=uy*18*dt}
- }
- for(const b of bullets.filter(b=>b.enemy)){if(Math.hypot(b.x-player.x,b.y-player.y)<player.r+5){hurt(b.damage);b.life=-1;burst(b.x,b.y,'#9d71bf',4)}}
- bullets=bullets.filter(b=>b.life>0);
- particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt});particles=particles.filter(p=>p.life>0);
- if(zombiesToSpawn===0&&zombies.length===0){endWave()}
- updateHUD();
-}
-function endWave(){
- if(intermission)return;intermission=true;intermissionTimer=20;document.getElementById('intermission').classList.remove('hidden');
- if(wave%2===0)setTimeout(()=>showUpgrade(),80);
-}
-function showUpgrade(){
- if(!running)return;
- document.getElementById('intermission').classList.add('hidden');intermission=false;paused=true;
- const choices=Object.keys(upgradeDefs).filter(k=>upgrades[k]<5).sort(()=>Math.random()-.5).slice(0,3);
- document.getElementById('upgradeSub').textContent=`Level ${Math.floor(wave/2)} reward • each upgrade can reach level 5`;
- const box=document.getElementById('upgradeCards');box.innerHTML='';
- choices.forEach(k=>{const d=upgradeDefs[k],b=document.createElement('button');b.className='card';b.innerHTML=`<div class="level">LEVEL ${upgrades[k]+1} / 5</div><h3>${d.name}</h3><p>${d.desc}</p>`;b.onclick=()=>{upgrades[k]++;d.apply();paused=false;document.getElementById('upgradeOverlay').classList.add('hidden');startWave(wave+1)};box.appendChild(b)});
- document.getElementById('upgradeOverlay').classList.remove('hidden');
-}
-function updateHUD(){
- if(!player)return;const s=playerStats();
- document.getElementById('healthText').textContent=`${Math.ceil(Math.max(0,player.hp))} / ${player.maxHp}`;
- document.getElementById('hpFill').style.width=Math.max(0,player.hp/player.maxHp*100)+'%';document.getElementById('staminaFill').style.width=player.stamina/player.maxStamina*100+'%';
- document.getElementById('waveText').textContent='WAVE '+wave;document.getElementById('zombieText').textContent='ZOMBIES LEFT: '+(zombies.length+zombiesToSpawn);
- document.getElementById('moneyText').textContent='$'+money;document.getElementById('timeText').textContent=formatTime(gameTime);
- document.getElementById('gunName').textContent=s.g.name.toUpperCase();document.getElementById('ammoText').textContent=`${player.ammo} / ∞`;
- document.getElementById('reloadText').textContent=player.reloading?`RELOADING ${Math.max(0,player.reloadT).toFixed(1)}s`:(player.ammo===0?'EMPTY • R TO RELOAD':'READY • R TO RELOAD');
- document.getElementById('gunDetails').innerHTML=`Damage: ${Math.round(s.dmg)} • Mag: ${s.mag}<br>Fire rate: ${s.g.rate}/s • Reload: ${s.reload.toFixed(2)}s<br>Spread: ${Math.round(s.spread*100)}% • Crit: ${Math.round(s.crit*100)}%`;
-}
-function formatTime(t){let m=Math.floor(t/60),s=Math.floor(t%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
-function showMessage(text,time){const m=document.getElementById('message');m.textContent=text;m.style.opacity=1;setTimeout(()=>m.style.opacity=0,time*1000)}
-function togglePause(){if(!running||intermission||!document.getElementById('upgradeOverlay').classList.contains('hidden'))return;paused=!paused;document.getElementById('pauseOverlay').classList.toggle('hidden',!paused)}
+                <span>
+                    ZOMBIES
+                    <b id="zombies">0</b>
+                </span>
 
-function showShop(open){
- if(!open){closeShop();return}
- if(!running){document.getElementById('menu').classList.add('hidden');document.getElementById('shopOverlay').classList.remove('hidden');renderShop('weapons');return}
- if(!intermission)return;paused=true;document.getElementById('shopOverlay').classList.remove('hidden');renderShop('weapons')
-}
-function closeShop(){document.getElementById('shopOverlay').classList.add('hidden');if(running)paused=false}
-function renderShop(tab){
- document.getElementById('weaponsTab').classList.toggle('active',tab==='weapons');document.getElementById('upgradesTab').classList.toggle('active',tab!=='weapons');
- const grid=document.getElementById('shopGrid');grid.innerHTML='';document.getElementById('shopMoney').textContent='$'+money;
- if(tab==='weapons'){
-  Object.entries(guns).forEach(([id,g])=>{const owned=ownedGuns.includes(id),b=document.createElement('div');b.className='item';b.innerHTML=`<span class="price">${owned?'OWNED':'$'+g.price}</span><h3>${g.name}</h3><p>${g.desc}</p><p>Damage ${g.damage} • Mag ${g.mag} • ${g.rate}/s • Reload ${g.reload}s</p><button ${owned?'':'onclick="buyGun(\\''+id+'\\')"' }>${owned?(currentGun===id?'EQUIPPED':'EQUIP'):'BUY'}</button>`;if(owned)b.querySelector('button').onclick=()=>{currentGun=id;player.ammo=Math.min(player.ammo,playerStats().mag);renderShop(tab);updateHUD()};grid.appendChild(b)})
- }else{
-  const defs={heal:{name:'Field Medkit',cost:150,desc:'Restore 40 health.',buy:()=>player.hp=Math.min(player.maxHp,player.hp+40)},stamina:{name:'Stamina Pack',cost:180,desc:'+25 maximum stamina.',buy:()=>{player.maxStamina+=25;player.stamina=player.maxStamina}},armor:{name:'Armor Plating',cost:300,desc:'Reduce incoming damage by 10%.',buy:()=>player.damageReduction=(player.damageReduction||0)+.1}};
-  Object.entries(defs).forEach(([id,d])=>{const b=document.createElement('div');b.className='item';b.innerHTML=`<span class="price">$${d.cost}</span><h3>${d.name}</h3><p>${d.desc}</p><button>BUY</button>`;b.querySelector('button').onclick=()=>{if(money>=d.cost){money-=d.cost;d.buy();renderShop(tab);updateHUD()}};grid.appendChild(b)})
- }
-}
-function buyGun(id){const g=guns[id];if(money>=g.price){money-=g.price;ownedGuns.push(id);currentGun=id;player.ammo=g.mag;renderShop('weapons');updateHUD()}}
+                <span>
+                    $
+                    <b id="money">0</b>
+                </span>
 
-function showSettings(open){
- if(open){document.getElementById('menu').classList.add('hidden');document.getElementById('settingsOverlay').classList.remove('hidden');updateSettingsButtons()}
- else{document.getElementById('settingsOverlay').classList.add('hidden');if(!running)document.getElementById('menu').classList.remove('hidden')}
-}
-function toggleSetting(k){settings[k]=!settings[k];updateSettingsButtons();applySettings()}
-function updateSettingsButtons(){[['crosshair','sCrosshair'],['bars','sBars'],['damage','sDamage'],['shake','sShake'],['autoReload','sAuto'],['particles','sParticles']].forEach(([a,b])=>document.getElementById(b).textContent=settings[a]?'ON':'OFF')}
-function applySettings(){document.getElementById('crosshair').classList.toggle('hidden',!settings.crosshair)}
+                <span>
+                    TIME
+                    <b id="time">00:00</b>
+                </span>
 
-function draw(){
- ctx.clearRect(0,0,W,H);ctx.fillStyle='#0b1117';ctx.fillRect(0,0,W,H);
- // grid arena
- ctx.strokeStyle='#16202a';ctx.lineWidth=1;const gs=48;for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
- // subtle arena border
- ctx.strokeStyle='#293746';ctx.lineWidth=3;ctx.strokeRect(5,5,W-10,H-10);
- for(const p of particles){ctx.globalAlpha=Math.max(0,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x-2,p.y-2,4,4)}ctx.globalAlpha=1;
- for(const b of bullets){if(b.enemy){ctx.strokeStyle='#b37ac8';ctx.lineWidth=4}else{ctx.strokeStyle='#f2cf77';ctx.lineWidth=3}ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-b.vx*.018,b.y-b.vy*.018);ctx.stroke()}
- for(const z of zombies)drawZombie(z);
- if(player)drawPlayer();
-}
-function drawPlayer(){
- const a=Math.atan2(mouse.y-player.y,mouse.x-player.x);ctx.save();ctx.translate(player.x,player.y);ctx.rotate(a);
- ctx.fillStyle=player.inv>0?'#9eb7d2':'#d6e0e8';ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#252d38';ctx.fillRect(8,-5,25,10);ctx.fillStyle='#6c8195';ctx.fillRect(29,-4,10,8);ctx.restore();
-}
-function drawZombie(z){
- const t=zombieTypes[z.type], a=Math.atan2(player.y-z.y,player.x-z.x);ctx.save();ctx.translate(z.x,z.y);
- ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(0,0,z.r,0,Math.PI*2);ctx.fill();
- // simple distinguishing features
- ctx.fillStyle='#15191e';if(z.type==='tank'){ctx.fillRect(-z.r*.8,-z.r*.2,z.r*1.6,z.r*.55)}else if(z.type==='runner'){ctx.fillRect(-z.r*.55,-z.r*.65,z.r*1.1,z.r*.18)}else if(z.type==='crawler'){ctx.fillRect(-z.r,-2,z.r*2,4)}else if(z.type==='spitter'){ctx.fillStyle='#b98ed0';ctx.beginPath();ctx.arc(z.r*.45,0,z.r*.28,0,Math.PI*2);ctx.fill()}else if(z.type==='armored'){ctx.strokeStyle='#b9c1ca';ctx.lineWidth=4;ctx.stroke()}else if(z.type==='exploder'){ctx.fillStyle='#e0a354';ctx.beginPath();ctx.arc(0,0,z.r*.25,0,Math.PI*2);ctx.fill()}
- ctx.restore();
- if(settings.bars){const bw=z.r*2.7,bh=5,ratio=Math.max(0,z.hp/z.maxHp);ctx.fillStyle='#161b20';ctx.fillRect(z.x-bw/2,z.y-z.r-13,bw,bh);ctx.fillStyle=ratio>.5?'#7dbb73':ratio>.2?'#d5a54d':'#d25c5c';ctx.fillRect(z.x-bw/2,z.y-z.r-13,bw*ratio,bh)}
-}
-function loop(t){const dt=Math.min(.033,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}
-requestAnimationFrame(loop);
-</script>
+            </div>
+
+
+            <div class="bars">
+
+                <div>
+                    <label>HEALTH</label>
+
+                    <div class="bar">
+                        <i id="hpBar"></i>
+                    </div>
+                </div>
+
+
+                <div>
+                    <label>STAMINA</label>
+
+                    <div class="bar">
+                        <i id="staminaBar"></i>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- Current weapon information -->
+            <div class="weapon">
+
+                <div>
+                    <b id="gunName">Pistol</b>
+
+                    <small id="gunStats">
+                        20 DMG · 12 MAG
+                    </small>
+                </div>
+
+
+                <div class="ammo">
+
+                    <b id="ammo">12</b>
+
+                    <span>/</span>
+
+                    <span id="mag">12</span>
+
+                    <small id="reloadText"></small>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- =========================================================
+         INTERMISSION
+    ========================================================== -->
+    <div id="intermission" class="overlay hidden">
+
+        <div class="panel">
+
+            <h2>INTERMISSION</h2>
+
+            <div class="big" id="intermissionTimer">
+                20
+            </div>
+
+            <p>
+                Shop is open. Prepare for the next wave.
+            </p>
+
+            <button id="shopBtn" type="button">
+                ENTER SHOP
+            </button>
+
+            <button id="continueBtn" type="button">
+                CONTINUE
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         UPGRADE SCREEN
+    ========================================================== -->
+    <div id="upgrade" class="overlay hidden">
+
+        <div class="panel wide">
+
+            <h2>CHOOSE AN UPGRADE</h2>
+
+            <p>
+                Choose one. Each upgrade can reach level 5.
+            </p>
+
+            <div id="upgradeCards" class="cards"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         SHOP
+    ========================================================== -->
+    <div id="shop" class="overlay hidden">
+
+        <div class="panel wide">
+
+            <div class="row">
+
+                <h2>SHOP</h2>
+
+                <button id="closeShop" type="button">
+                    CLOSE
+                </button>
+
+            </div>
+
+
+            <div class="shopMoney">
+                Money:
+                $
+                <b id="shopMoney">0</b>
+            </div>
+
+
+            <div id="shopItems" class="shopGrid"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         ARMORY
+    ========================================================== -->
+    <div id="armory" class="overlay hidden">
+
+        <div class="panel wide">
+
+            <div class="row">
+
+                <h2>ARMORY</h2>
+
+                <button id="closeArmory" type="button">
+                    CLOSE
+                </button>
+
+            </div>
+
+
+            <div id="armoryItems" class="shopGrid"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         SETTINGS
+    ========================================================== -->
+    <div id="settings" class="overlay hidden">
+
+        <div class="panel">
+
+            <div class="row">
+
+                <h2>SETTINGS</h2>
+
+                <button id="closeSettings" type="button">
+                    CLOSE
+                </button>
+
+            </div>
+
+
+            <label class="toggle">
+
+                <input
+                    id="setCrosshair"
+                    type="checkbox"
+                    checked
+                >
+
+                Custom crosshair
+
+            </label>
+
+
+            <label class="toggle">
+
+                <input
+                    id="setBars"
+                    type="checkbox"
+                    checked
+                >
+
+                Zombie health bars
+
+            </label>
+
+
+            <label class="toggle">
+
+                <input
+                    id="setNumbers"
+                    type="checkbox"
+                    checked
+                >
+
+                Damage numbers
+
+            </label>
+
+
+            <label class="toggle">
+
+                <input
+                    id="setShake"
+                    type="checkbox"
+                    checked
+                >
+
+                Screen shake
+
+            </label>
+
+
+            <label class="toggle">
+
+                <input
+                    id="setParticles"
+                    type="checkbox"
+                    checked
+                >
+
+                Particles
+
+            </label>
+
+
+            <label class="toggle">
+
+                <input
+                    id="setAutoReload"
+                    type="checkbox"
+                    checked
+                >
+
+                Auto reload
+
+            </label>
+
+
+            <button id="closeSettings2" type="button">
+                DONE
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         PAUSE MENU
+    ========================================================== -->
+    <div id="pause" class="overlay hidden">
+
+        <div class="panel">
+
+            <h2>PAUSED</h2>
+
+            <button id="resumeBtn" type="button">
+                RESUME
+            </button>
+
+            <button id="pauseSettingsBtn" type="button">
+                SETTINGS
+            </button>
+
+            <button id="menuBtn" type="button">
+                MAIN MENU
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         DEATH SCREEN
+    ========================================================== -->
+    <div id="death" class="overlay hidden">
+
+        <div class="panel">
+
+            <h2>YOU DIED</h2>
+
+            <p>
+                Wave
+                <b id="deathWave">1</b>
+
+                ·
+
+                Kills
+                <b id="deathKills">0</b>
+            </p>
+
+
+            <button id="retryBtn" type="button">
+                TRY AGAIN
+            </button>
+
+
+            <button id="deathMenuBtn" type="button">
+                MAIN MENU
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         GAME SCRIPTS
+
+         IMPORTANT:
+         These are separated so the game is easier to edit,
+         debug, and expand.
+    ========================================================== -->
+
+    <!-- Weapon definitions -->
+    <script src="guns.js"></script>
+
+    <!-- Zombie definitions -->
+    <script src="zombies.js"></script>
+
+    <!-- Shop and upgrades -->
+    <script src="shop.js"></script>
+
+    <!-- Settings -->
+    <script src="settings.js"></script>
+
+    <!-- Main game engine -->
+    <script src="game.js"></script>
+
 </body>
 </html>
